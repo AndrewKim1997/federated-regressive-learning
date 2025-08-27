@@ -17,13 +17,15 @@ def _safe_prob(p: np.ndarray, eps: float = 1e-12) -> np.ndarray:
     return p / p.sum()
 
 def _js_divergence(p: np.ndarray, q: np.ndarray, eps: float = 1e-12) -> float:
-    p = _safe_prob(p, eps); q = _safe_prob(q, eps)
+    p = _safe_prob(p, eps)
+    q = _safe_prob(q, eps)
     m = 0.5 * (p + q)
     return 0.5 * (np.sum(p * (np.log(p) - np.log(m))) + np.sum(q * (np.log(q) - np.log(m))))
 
 def _wasserstein_1d(p: np.ndarray, q: np.ndarray) -> float:
     # Discrete 1D EMD via CDF L1; class order is 0..K-1
-    p = _safe_prob(p); q = _safe_prob(q)
+    p = _safe_prob(p)
+    q = _safe_prob(q)
     cdf_diff = np.cumsum(p - q)
     return float(np.sum(np.abs(cdf_diff)))
 
