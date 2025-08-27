@@ -1,0 +1,77 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "federated-regressive-learning"
+version = "0.1.0"
+description = "Method-reproduction code for Federated Regressive Learning (2024): scenario generators (S1–S3), baselines, and seeded experiments. UGEI data excluded."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+
+authors = [
+  { name = "Dong Seok Kim", email = "jkds5920@gachon.ac.kr" },
+  { name = "Shabir Ahmad", email = "shabir@gachon.ac.kr" },
+  { name = "Taeg Keun Whangbo", email = "tkwhangbo@gachon.ac.kr" }
+]
+
+keywords = [
+  "federated-learning", "non-iid", "distribution-shift", "client-drift",
+  "adaptive-aggregation", "wasserstein-distance",
+  "reproducibility", "method-reproduction", "scenario-generator"
+]
+
+# NOTE: Install PyTorch separately (platform-specific): pip install torch --index-url https://download.pytorch.org/whl/cu121 (etc.)
+dependencies = [
+  "numpy>=1.24",
+  "scipy>=1.10",
+  "pandas>=2.0",
+  "scikit-learn>=1.3",
+  "matplotlib>=3.7",
+  "tqdm>=4.66",
+  "pyyaml>=6.0",
+  "joblib>=1.3"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.4",
+  "pytest-cov>=4.1",
+  "black>=24.3",
+  "isort>=5.12",
+  "flake8>=7.0",
+  "mypy>=1.6",
+  "pre-commit>=3.6"
+]
+docs = [
+  "mkdocs>=1.5",
+  "mkdocs-material>=9.5"
+]
+
+[project.urls]
+Homepage = "https://github.com/AndrewKim1997/federated-regressive-learning"
+Repository = "https://github.com/AndrewKim1997/federated-regressive-learning"
+Issues = "https://github.com/AndrewKim1997/federated-regressive-learning/issues"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["frl*"]
+exclude = ["tests*", "docs*", "examples*", "scripts*"]
+
+[tool.setuptools.package-data]
+"frl" = ["scenarios/*.yaml"]
+
+[tool.black]
+line-length = 100
+target-version = ["py39", "py310", "py311"]
+
+[tool.isort]
+profile = "black"
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-q"
+testpaths = ["tests"]
