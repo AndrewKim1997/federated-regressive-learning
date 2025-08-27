@@ -1,0 +1,15 @@
+name: s2_hetero_dist_diff_size
+seed: 123
+
+dataset:
+  name: mnist
+  split: train
+  root:
+
+clients:
+  num_clients: 5
+  sizes: [12000, 12000, 12000, 12000, 12000]
+
+scenario:
+  type: s2_hetero_dist_diff_size
+  alpha: 0.3
