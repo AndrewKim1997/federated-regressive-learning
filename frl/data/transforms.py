@@ -127,7 +127,6 @@ def dirichlet_noniid_split(
 
     # Per-class pools
     pools = [rng.permutation(np.where(y == c)[0]).tolist() for c in range(K)]
-    pool_ptr = [0] * K
 
     # Sample class->client proportions
     props = rng.dirichlet([alpha] * M, size=K)  # shape [K, M]
