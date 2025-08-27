@@ -1,0 +1,14 @@
+# Scenario aliases mapping to concrete YAML files under frl/scenarios/
+
+default: "frl/scenarios/s1_equal_dist_diff_size.yaml"
+
+s1_equal_dist_diff_size: "frl/scenarios/s1_equal_dist_diff_size.yaml"
+s2_hetero_dist_diff_size: "frl/scenarios/s2_hetero_dist_diff_size.yaml"
+s3_class_missing: "frl/scenarios/s3_class_missing.yaml"
+
+# Optional presets for quick switching per dataset
+presets:
+  mnist_s1: { alias: "s1_equal_dist_diff_size" }
+  mnist_s2: { alias: "s2_hetero_dist_diff_size" }
+  mnist_s3: { alias: "s3_class_missing" }
+  cifar10_s2: { alias: "s2_hetero_dist_diff_size" }
