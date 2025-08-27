@@ -1,0 +1,25 @@
+name: s3_class_missing
+seed: 7
+
+dataset:
+  name: mnist
+  split: train
+  root:
+
+clients:
+  num_clients: 5
+  sizes: [12000, 12000, 12000, 12000, 12000]
+
+scenario:
+  type: s3_class_missing
+  base: iid
+  alpha: 0.5
+
+  missing_map:
+    0: [0, 1]
+    1: [2, 3]
+    2: [4, 5]
+    3: [6]
+    4: [7, 8, 9]
+
+  fill_to_target: false
