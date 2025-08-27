@@ -8,8 +8,9 @@ dataset:
 
 clients:
   num_clients: 5
-  sizes: [12000, 12000, 12000, 12000, 12000]
+  sizes: null
 
 scenario:
   type: s2_hetero_dist_diff_size
   alpha: 0.3
+  class_props: null
