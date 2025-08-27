@@ -3,8 +3,15 @@ from __future__ import annotations
 import numpy as np
 
 def accuracy(y_true: np.ndarray, y_pred: np.ndarray) -> float:
-    y_true = np.asarray(y_true); y_pred = np.asarray(y_pred)
+    y_true = np.asarray(y_true)
+    y_pred = np.asarray(y_pred)
     return float((y_true == y_pred).mean())
+
+def js_divergence(p: np.ndarray, q: np.ndarray, eps: float = 1e-12) -> float:
+    p = _safe_prob(p, eps)
+    q = _safe_prob(q, eps)
+    m = 0.5 * (p + q)
+    return float(0.5 * (np.sum(p * (np.log(p) - np.log(m))) + np.sum(q * (np.log(q) - np.log(m)))))
 
 def ece(probs: np.ndarray, y_true: np.ndarray, n_bins: int = 15) -> float:
     y_true = np.asarray(y_true)
@@ -23,11 +30,6 @@ def _safe_prob(p: np.ndarray, eps: float = 1e-12) -> np.ndarray:
     p = np.asarray(p, dtype=float)
     p = np.clip(p, eps, None)
     return p / p.sum()
-
-def js_divergence(p: np.ndarray, q: np.ndarray, eps: float = 1e-12) -> float:
-    p = _safe_prob(p, eps); q = _safe_prob(q, eps)
-    m = 0.5 * (p + q)
-    return float(0.5 * (np.sum(p * (np.log(p) - np.log(m))) + np.sum(q * (np.log(q) - np.log(m)))))
 
 def precision_recall_f1(
     y_true: np.ndarray,
