@@ -170,4 +170,136 @@ def train_federated(
     dataset_name: str = "mnist",
     scenario: str = "frl/scenarios/s1_equal_dist_diff_size.yaml",
     rounds: int = 3,
-    clie
+    clients_per_round: int | None = None,
+    local_epochs: int = 1,
+    batch_size: int = 128,
+    lr: float = 0.1,
+    seed: int = 42,
+    aggregator: str = "frl",  # "fedavg" | "fedprox" | "frl"
+    frl_ref: str = "uniform",  # "uniform" | "empirical"
+    frl_metric: str = "wasserstein",  # "wasserstein" | "js"
+    frl_size_power: float = 1.0,
+    frl_dist_power: float = 1.0,
+    log_dir: str = "results/logs",
+) -> str:
+    set_seed(seed)
+    os.makedirs(log_dir, exist_ok=True)
+
+    # Load data
+    train = load_dataset(dataset_name, split="train")
+    test = load_dataset(dataset_name, split="test")
+    Xtr, ytr, K = train.X, train.y, train.num_classes
+    Xte, yte = test.X, test.y
+
+    # Build splits from scenario YAML/alias
+    sc_cfg = load_scenario_alias_or_path(scenario)
+    client_indices = build_client_indices_from_config(ytr, sc_cfg)
+    M = len(client_indices)
+
+    if clients_per_round is None or clients_per_round > M:
+        clients_per_round = M
+
+    # Init global model
+    D = Xtr.shape[1]
+    g_model = init_model(D, K, seed=seed)
+
+    # Run
+    rng = np.random.default_rng(seed)
+    log_rows = []
+
+    for rnd in range(1, rounds + 1):
+        # sample participating clients
+        part = rng.choice(M, size=clients_per_round, replace=False)
+        updates: List[ClientUpdate] = []
+
+        # compute client updates
+        for cid in part:
+            idx = client_indices[cid]
+            Xc, yc = Xtr[idx], ytr[idx]
+            # local copy
+            local = SoftmaxModel(W=g_model.W.copy(), b=g_model.b.copy())
+            for _ in range(local_epochs):
+                sgd_epoch(Xc, yc, local, lr=lr, weight_decay=0.0, batch_size=batch_size, rng=rng)
+            delta = model_params_vector(local) - model_params_vector(g_model)
+            dist = class_distribution(yc, K)
+            updates.append(ClientUpdate(delta=delta, num_samples=len(yc), dist=dist, metadata={"cid": int(cid)}))
+
+        # aggregate
+        if aggregator.lower() == "fedavg":
+            agg_delta, agg_info = fedavg_aggregate(updates)
+        elif aggregator.lower() == "fedprox":
+            agg_delta, agg_info = fedprox_aggregate(updates, mu=0.0)
+        elif aggregator.lower() == "frl":
+            agg_delta, agg_info = frl_aggregate(
+                updates,
+                ref=frl_ref,
+                metric=frl_metric,
+                size_power=frl_size_power,
+                dist_power=frl_dist_power,
+            )
+        else:
+            raise ValueError("Unknown aggregator. Choose from: fedavg, fedprox, frl")
+
+        apply_delta(g_model, agg_delta)
+
+        # evaluate
+        probs = forward_proba(Xte, g_model)
+        yhat = probs.argmax(axis=1)
+        acc = acc_fn(yte, yhat)
+        ece = ece_fn(probs, yte, n_bins=15)
+
+        row = {
+            "round": rnd,
+            "participants": int(len(part)),
+            "aggregator": aggregator,
+            "frl_ref": frl_ref if aggregator.lower() == "frl" else "",
+            "frl_metric": frl_metric if aggregator.lower() == "frl" else "",
+            "acc": acc,
+            "ece": ece,
+        }
+        log_rows.append(row)
+        print(f"[round {rnd:02d}] acc={acc:.4f} ece={ece:.4f}")
+
+    # save log
+    out_csv = os.path.join(log_dir, f"log_{dataset_name}_{os.path.basename(scenario).split('.')[0]}_{aggregator}.csv")
+    pd.DataFrame(log_rows).to_csv(out_csv, index=False)
+    return out_csv
+
+
+def parse_args() -> argparse.Namespace:
+    ap = argparse.ArgumentParser(description="Federated runner for FRL and baselines.")
+    ap.add_argument("--dataset", type=str, default="mnist", help="mnist | cifar10")
+    ap.add_argument("--scenario", type=str, default="frl/scenarios/s1_equal_dist_diff_size.yaml", help="path or alias (see configs/scenarios.yaml)")
+    ap.add_argument("--rounds", type=int, default=3)
+    ap.add_argument("--clients", type=int, default=None, help="clients per round (default: all clients in scenario)")
+    ap.add_argument("--local-epochs", type=int, default=1)
+    ap.add_argument("--batch-size", type=int, default=128)
+    ap.add_argument("--lr", type=float, default=0.1)
+    ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--aggregator", type=str, default="frl", choices=["fedavg", "fedprox", "frl"])
+    ap.add_argument("--frl-ref", type=str, default="uniform", choices=["uniform", "empirical"])
+    ap.add_argument("--frl-metric", type=str, default="wasserstein", choices=["wasserstein", "js"])
+    ap.add_argument("--frl-size-power", type=float, default=1.0)
+    ap.add_argument("--frl-dist-power", type=float, default=1.0)
+    ap.add_argument("--log-dir", type=str, default="results/logs")
+    return ap.parse_args()
+
+
+if __name__ == "__main__":
+    args = parse_args()
+    train_federated(
+        dataset_name=args.dataset,
+        scenario=args.scenario,
+        rounds=args.rounds,
+        clients_per_round=args.clients,
+        local_epochs=args.local_epochs,
+        batch_size=args.batch_size,
+        lr=args.lr,
+        seed=args.seed,
+        aggregator=args.aggregator,
+        frl_ref=args.frl_ref,
+        frl_metric=args.frl_metric,
+        frl_size_power=args.frl_size_power,
+        frl_dist_power=args.frl_dist_power,
+        log_dir=args.log_dir,
+    )
