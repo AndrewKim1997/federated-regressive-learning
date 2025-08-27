@@ -1,0 +1,41 @@
+# Minimal, CPU-only image for FRL (no torch/torchvision)
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+# System basics (no heavy build tools needed thanks to wheels)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git ca-certificates curl tini \
+ && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Leverage layer caching: install project with minimal context first
+COPY pyproject.toml README.md ./
+COPY env/requirements.txt env/requirements.txt
+
+# Install project (runtime only)
+RUN python -m pip install -U pip wheel setuptools \
+ && pip install .
+
+# Copy source (after install to keep cache efficient)
+COPY frl/ frl/
+COPY scripts/ scripts/
+COPY configs/ configs/
+COPY examples/ examples/
+COPY frl/scenarios/ frl/scenarios/
+COPY docs/ docs/
+
+# Create result/data dirs (bind-mount friendly)
+RUN mkdir -p /app/results/logs /app/results/figures /app/data
+
+# Non-root for better security
+RUN useradd -m -u 1000 appuser
+USER appuser
+
+# Default working dir and entry
+WORKDIR /app
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["python", "-c", "import frl; print('FRL CPU image ready')"]
