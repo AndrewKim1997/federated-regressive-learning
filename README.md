@@ -187,12 +187,14 @@ federated-regressive-learning/
 If you use this repository, please cite the paper (or see `CITATION.cff`):
 
 ```bibtex
-@article{kim2024frl,
-  title   = {Federated regressive learning: Adaptive weight updates through statistical information of clients},
-  journal = {Applied Soft Computing},
-  volume  = {166},
-  pages   = {112043},
-  year    = {2024}
+@article{kim2024federated,
+  title={Federated regressive learning: Adaptive weight updates through statistical information of clients},
+  author={Kim, Dong Seok and Ahmad, Shabir and Whangbo, Taeg Keun},
+  journal={Applied Soft Computing},
+  volume={166},
+  pages={112043},
+  year={2024},
+  publisher={Elsevier}
 }
 ```
 
