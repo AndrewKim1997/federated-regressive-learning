@@ -146,6 +146,15 @@ def build_client_indices_from_config(y: np.ndarray, cfg: dict) -> List[np.ndarra
     sizes = cfg.get("clients", {}).get("sizes", None)
     K = int(np.max(y)) + 1
 
+    # --- Safety guard: if sizes sum exceeds dataset size, fall back to auto-even ---
+    if sizes is not None:
+        try:
+            total = int(sum(int(s) for s in sizes))
+            if total > len(y):
+                sizes = None  # let splitter choose even sizes
+        except Exception:
+            sizes = None
+    
     if stype in {"s1", "s1_equal_dist_diff_size"}:
         splits = build_s1(y, K, M, sizes, seed)
     elif stype in {"s2", "s2_hetero_dist_diff_size"}:
