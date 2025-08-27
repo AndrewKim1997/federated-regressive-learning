@@ -1,3 +1,4 @@
+# frl/data/loaders.py (imports 부분)
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -8,9 +9,11 @@ from sklearn.datasets import fetch_openml
 
 try:
     from torchvision import datasets, transforms as T  # type: ignore
-except Exception:  # torchvision optional
+    _HAS_TORCHVISION = True
+except Exception:  # optional dependency; keep import errors soft
     datasets = None  # type: ignore
     T = None  # type: ignore
+    _HAS_TORCHVISION = False
 
 @dataclass
 class NpDataset:
