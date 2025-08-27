@@ -24,25 +24,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
+        with:
+          python-version: "3.11"
       - run: python -m pip install -U pip ruff
       - run: ruff check .
 
   test:
     name: Unit tests (py${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: .
     strategy:
       fail-fast: false
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
-    env:
-      PYTHONPATH: .
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          cache: "pip"
+          cache: pip
       - run: python -m pip install -U pip
       - run: pip install -e .[dev]
       - run: pytest -q
@@ -51,12 +52,16 @@ jobs:
     name: MNIST smoke run
     needs: test
     runs-on: ubuntu-latest
-    env: { PYTHONPATH: . }
+    env:
+      PYTHONPATH: .
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: "3.11", cache: pip }
-      - run: |
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install package (runtime only)
+        run: |
           python -m pip install -U pip
           pip install -e .
       - name: Generate S1 scenario (MNIST)
@@ -72,11 +77,20 @@ jobs:
             --aggregator frl \
             --rounds 1 --local-epochs 1 --batch-size 256 --lr 0.1 \
             --log-dir results/logs
-      - run: python scripts/make_fig_tables.py --glob "results/logs/*.csv" --outdir results/figures || true
-      - uses: actions/upload-artifact@v4
-        with: { name: logs-${{ github.run_number }}, path: results/logs, if-no-files-found: warn }
-      - uses: actions/upload-artifact@v4
-        with: { name: figures-${{ github.run_number }}, path: results/figures, if-no-files-found: warn }
+      - name: Make figures/tables
+        run: python scripts/make_fig_tables.py --glob "results/logs/*.csv" --outdir results/figures || true
+      - name: Upload logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-${{ github.run_number }}
+          path: results/logs
+          if-no-files-found: warn
+      - name: Upload figures
+        uses: actions/upload-artifact@v4
+        with:
+          name: figures-${{ github.run_number }}
+          path: results/figures
+          if-no-files-found: warn
 
   cifar_smoke:
     name: CIFAR-10 smoke (CPU)
@@ -85,13 +99,14 @@ jobs:
     timeout-minutes: 20
     env:
       PYTHONPATH: .
-      TORCH_HOME: ~/.torch  # cache location for datasets/weights
+      TORCH_HOME: ~/.torch
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: "3.11", cache: pip }
+        with:
+          python-version: "3.11"
+          cache: pip
 
-      # Cache CIFAR-10 download to speed up subsequent runs
       - name: Cache Torch data
         uses: actions/cache@v4
         with:
@@ -119,7 +134,8 @@ jobs:
             --rounds 1 --local-epochs 1 --batch-size 256 --lr 0.1 \
             --log-dir results/logs
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload CIFAR smoke logs
+        uses: actions/upload-artifact@v4
         with:
           name: cifar-smoke-logs-${{ github.run_number }}
           path: results/logs
