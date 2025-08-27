@@ -1,0 +1,19 @@
+# Keep images lean & faster builds
+.git
+.github
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+*.dll
+*.dylib
+*.egg-info/
+build/
+dist/
+.cache/
+.venv/
+.env
+results/
+data/
+.DS_Store
