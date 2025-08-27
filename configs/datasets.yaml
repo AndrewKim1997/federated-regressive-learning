@@ -1,0 +1,25 @@
+# Dataset registry consumed by your training/runtime script
+
+mnist:
+  loader: "mnist"     # frl.data.loaders.load_dataset("mnist", ...)
+  split: "train"
+  root: null          # e.g., "./data"
+  num_classes: 10
+  input_shape: [28, 28]
+  note: "Uses OpenML via scikit-learn; returns float32 in [0,1]."
+
+cifar10:
+  loader: "cifar10"   # requires torchvision
+  split: "train"
+  root: "./data"
+  num_classes: 10
+  input_shape: [32, 32, 3]
+  note: "Requires torchvision; returns float32 in [0,1]."
+
+ugei_placeholder:
+  loader: "ugei"      # user-supplied NPZ path only; never distributed
+  split: "train"
+  path: null          # e.g., "/abs/path/to/ugei.npz" (local only)
+  num_classes: null
+  input_shape: null
+  note: "Private medical data is not included. This entry documents the expected interface."
