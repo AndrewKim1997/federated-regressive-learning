@@ -3,9 +3,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence
 
 import numpy as np
 import yaml
@@ -273,7 +273,7 @@ def main():
     ds_root = cfg.dataset.get("root", None)
 
     data = load_dataset(ds_name, root=ds_root, split=ds_split)
-    X, y, K = data.X, data.y, int(data.num_classes)
+    y, K = data.y, int(data.num_classes)
     M = int(cfg.clients.get("num_clients", 5))
     sizes = cfg.clients.get("sizes", None)
 
