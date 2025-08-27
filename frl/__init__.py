@@ -24,17 +24,14 @@ from .utils import set_seed, get_logger
 
 __all__ = [
     "ClientUpdate",
-    "weighted_average",
+    "compute_frl_weights",
+    "frl_aggregate",
     "fedavg_aggregate",
     "fedprox_aggregate",
-    "frl_aggregate",
     "accuracy",
-    "precision_recall_f1",
     "ece",
     "js_divergence",
-    "wasserstein_discrete",
     "set_seed",
-    "get_logger",
 ]
 
 __version__ = "0.1.0"
