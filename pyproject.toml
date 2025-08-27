@@ -7,7 +7,7 @@ name = "federated-regressive-learning"
 version = "0.1.0"
 description = "Method-reproduction code for Federated Regressive Learning (2024): scenario generators (S1–S3), baselines, and seeded experiments. UGEI data excluded."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = { text = "MIT" }
 
 authors = [
