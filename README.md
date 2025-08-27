@@ -1,12 +1,35 @@
-# Federated Regressive Learning (FRL)
+<p align="center">
+  <a href="https://github.com/AndrewKim1997/federated-regressive-learning/actions/workflows/ci.yml">
+    <img alt="CI"
+         src="https://img.shields.io/github/actions/workflow/status/AndrewKim1997/federated-regressive-learning/ci.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=CI&labelColor=1f2937">
+  </a>
+  <a href="https://github.com/AndrewKim1997/federated-regressive-learning/actions/workflows/docker.yml">
+    <img alt="Docker images"
+         src="https://img.shields.io/github/actions/workflow/status/AndrewKim1997/federated-regressive-learning/docker.yml?branch=main&style=flat-square&logo=docker&logoColor=white&label=Docker%20images&labelColor=2496ED">
+  </a>
+  <a href="docs/DOCKER.md">
+    <img alt="Docker docs"
+         src="https://img.shields.io/badge/Docker-docs-2496ED?style=flat-square&logo=docker&logoColor=white&labelColor=2496ED">
+  </a>
+  <img alt="Python 3.10–3.12"
+       src="https://img.shields.io/badge/Python%203.10%E2%80%933.12-3776AB?style=flat-square&logo=python&logoColor=white&labelColor=3776AB">
+  <a href="LICENSE">
+    <img alt="License: MIT"
+         src="https://img.shields.io/badge/License%3A%20MIT-16a34a?style=flat-square&logo=opensourceinitiative&logoColor=white&labelColor=16a34a">
+  </a>
+</p>
 
-> Adaptive **server aggregation** that weights client updates by both **data size** and **distribution quality**.
-> FRL estimates how close each client’s label distribution is to a chosen **reference** (default: uniform) using a statistical distance (e.g., **Wasserstein**, **JS**), combines it with sample counts, and normalizes to obtain aggregation weights $\beta_i$.
+<h1 align="center">Federated Regressive Learning (FRL)</h1>
+<p align="center">
+  <em>Adaptive <b>server aggregation</b> that weights client updates by both <b>data size</b> and <b>distribution quality</b>.</em><br>
+  <em>Distances (e.g., Wasserstein / JS) → normalized weights β<sub>i</sub>.</em>
+</p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Python-3.10%20|%203.11%20|%203.12-3776AB?logo=python&logoColor=white" alt="python">
-  <img src="https://img.shields.io/badge/CI-GitHub%20Actions-brightgreen?logo=githubactions" alt="ci">
-  <img src="https://img.shields.io/badge/License-MIT-black" alt="license">
+  <a href="docs/media/frl-hero.mp4">
+    <img src="docs/media/frl-hero.gif" alt="FRL overview: client distributions → distance → β-weights → global update" width="820">
+  </a><br>
+  <sub>Click for 1080p MP4</sub>
 </p>
 
 ---
