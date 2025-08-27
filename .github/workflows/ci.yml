@@ -49,7 +49,7 @@ jobs:
       - run: pytest -q
 
   smoke:
-    name: MNIST smoke run
+    name: MNIST smoke (CPU)
     needs: test
     runs-on: ubuntu-latest
     env:
