@@ -10,17 +10,11 @@ Public API:
     - utils.set_seed, utils.get_logger
 """
 
-from .aggregation import ClientUpdate, weighted_average
-from .baselines import fedavg_aggregate, fedprox_aggregate
-from .algo_frl import frl_aggregate
-from .metrics import (
-    accuracy,
-    precision_recall_f1,
-    ece,
-    js_divergence,
-    wasserstein_discrete,
-)
-from .utils import set_seed, get_logger
+# frl/__init__.py
+from .algo_frl import compute_frl_weights, frl_aggregate
+from .aggregation import fedavg_aggregate, fedprox_aggregate, ClientUpdate
+from .metrics import accuracy, ece, js_divergence, precision_recall_f1
+from .utils import set_seed
 
 __all__ = [
     "ClientUpdate",
@@ -31,7 +25,7 @@ __all__ = [
     "accuracy",
     "ece",
     "js_divergence",
+    "precision_recall_f1",
     "set_seed",
 ]
-
 __version__ = "0.1.0"
