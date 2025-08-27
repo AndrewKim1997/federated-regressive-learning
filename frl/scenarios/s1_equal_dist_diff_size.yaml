@@ -1,0 +1,14 @@
+name: s1_equal_dist_diff_size
+seed: 42
+
+dataset:
+  name: mnist
+  split: train
+  root:
+
+clients:
+  num_clients: 5
+  sizes: [17500, 3500, 14000, 7000, 8000]
+
+scenario:
+  type: s1_equal_dist_diff_size
