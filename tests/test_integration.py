@@ -3,7 +3,6 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 import yaml
-import pytest
 
 # Import the runner module so we can monkeypatch its load_dataset symbol
 import scripts.run_federated as runner
