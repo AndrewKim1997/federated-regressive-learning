@@ -59,16 +59,16 @@
 
 ## 📚 Table of Contents
 
-* [Install](#install)
-* [Quick start](#quick-start)
-* [Scenarios](#scenarios)
-* [Reproducibility](#reproducibility)
-* [Datasets & Privacy](#datasets--privacy)
-* [Docker](#docker)
-* [Repository layout](#repository-layout)
-* [Cite](#cite)
-* [Contributing](#contributing)
-* [License](#license)
+* [Install](#-install)
+* [Quick start](#-quick-start)
+* [Scenarios](#-scenarios)
+* [Reproducibility](#-reproducibility)
+* [Datasets & Privacy](#-datasets-privacy)
+* [Docker](#-docker)
+* [Repository layout](#-repository-layout)
+* [Cite](#-cite)
+* [Contributing](#-contributing)
+* [License](#-license)
 
 ---
 
