@@ -10,10 +10,9 @@ Minimal federated runner (NumPy-based) for FRL and baselines.
 from __future__ import annotations
 
 import argparse
-import json
 import os
 from dataclasses import dataclass
-from typing import Dict, List, Tuple
+from typing import List
 
 import numpy as np
 import pandas as pd
