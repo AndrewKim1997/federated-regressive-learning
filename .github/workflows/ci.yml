@@ -5,19 +5,12 @@ on:
     branches: ["**"]
   pull_request:
     branches: ["**"]
-  workflow_dispatch:
-    inputs:
-      run_cifar_smoke:
-        description: "Also run CIFAR-10 smoke (requires torchvision)"
-        required: false
-        default: "false"
+  workflow_dispatch: {}
 
-# Cancel in-progress runs on the same branch
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-# Global env for deterministic, lightweight runs
 env:
   PYTHONHASHSEED: "42"
   OMP_NUM_THREADS: "1"
@@ -26,23 +19,14 @@ env:
 
 jobs:
   lint:
-    # Lint should not block merges at the beginning; set to true later if desired
     continue-on-error: true
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python (single version for lint)
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install ruff
-        run: python -m pip install -U pip ruff
-
-      - name: Ruff check
-        run: ruff check .
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: python -m pip install -U pip ruff
+      - run: ruff check .
 
   test:
     name: Unit tests (py${{ matrix.python-version }})
@@ -50,55 +34,36 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # PEP 604 syntax requires 3.10+. You can keep just ["3.11"] if you prefer.
         python-version: ["3.10", "3.11", "3.12"]
+    env:
+      PYTHONPATH: .
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: "pip"
-
-      - name: Upgrade pip
-        run: python -m pip install -U pip
-
-      - name: Install package (dev extras)
-        run: pip install -e .[dev]
-
-      # NOTE: Torch/torchvision are NOT required for our tests.
-      # If you ever need them, add an extra step to install from the PyTorch index.
-
-      - name: Run pytest
-        run: pytest -q
+      - run: python -m pip install -U pip
+      - run: pip install -e .[dev]
+      - run: pytest -q
 
   smoke:
     name: MNIST smoke run
     needs: test
     runs-on: ubuntu-latest
+    env: { PYTHONPATH: . }
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
-
-      - name: Install package (runtime only)
-        run: |
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11", cache: pip }
+      - run: |
           python -m pip install -U pip
           pip install -e .
-
       - name: Generate S1 scenario (MNIST)
         run: |
           python -m frl.scenarios.scenario_gen \
             -c frl/scenarios/s1_equal_dist_diff_size.yaml \
             -o results/scenarios --preview
-
       - name: Run FRL (1 round, quick)
         run: |
           python scripts/run_federated.py \
@@ -107,38 +72,31 @@ jobs:
             --aggregator frl \
             --rounds 1 --local-epochs 1 --batch-size 256 --lr 0.1 \
             --log-dir results/logs
-
-      - name: Make figures/tables
-        run: python scripts/make_fig_tables.py --glob "results/logs/*.csv" --outdir results/figures || true
-
-      - name: Upload logs
-        uses: actions/upload-artifact@v4
-        with:
-            name: logs-${{ github.run_number }}
-            path: results/logs
-            if-no-files-found: warn
-
-      - name: Upload figures
-        uses: actions/upload-artifact@v4
-        with:
-            name: figures-${{ github.run_number }}
-            path: results/figures
-            if-no-files-found: warn
+      - run: python scripts/make_fig_tables.py --glob "results/logs/*.csv" --outdir results/figures || true
+      - uses: actions/upload-artifact@v4
+        with: { name: logs-${{ github.run_number }}, path: results/logs, if-no-files-found: warn }
+      - uses: actions/upload-artifact@v4
+        with: { name: figures-${{ github.run_number }}, path: results/figures, if-no-files-found: warn }
 
   cifar_smoke:
-    # Optional example job; runs only when manually requested (workflow_dispatch input)
-    if: github.event_name == 'workflow_dispatch' && inputs.run_cifar_smoke == 'true'
+    name: CIFAR-10 smoke (CPU)
     needs: test
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PYTHONPATH: .
+      TORCH_HOME: ~/.torch  # cache location for datasets/weights
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11", cache: pip }
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      # Cache CIFAR-10 download to speed up subsequent runs
+      - name: Cache Torch data
+        uses: actions/cache@v4
         with:
-          python-version: "3.11"
-          cache: "pip"
+          path: ~/.torch
+          key: cifar-cache-${{ runner.os }}-v1
 
       - name: Install package + torchvision (CPU)
         run: |
@@ -146,20 +104,22 @@ jobs:
           pip install -e .
           pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
-      - name: CIFAR-10 S2 smoke (1 round)
+      - name: Generate S2
         run: |
           python -m frl.scenarios.scenario_gen \
             -c frl/scenarios/s2_hetero_dist_diff_size.yaml \
             -o results/scenarios --preview
+
+      - name: CIFAR-10 S2 smoke (1 round)
+        run: |
           python scripts/run_federated.py \
             --dataset cifar10 \
             --scenario frl/scenarios/s2_hetero_dist_diff_size.yaml \
             --aggregator frl \
             --rounds 1 --local-epochs 1 --batch-size 256 --lr 0.1 \
-            --log-dir results/logs || true
+            --log-dir results/logs
 
-      - name: Upload CIFAR smoke logs
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: cifar-smoke-logs-${{ github.run_number }}
           path: results/logs
