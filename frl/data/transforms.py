@@ -1,31 +1,42 @@
+# frl/data/transforms.py
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Sequence
+from typing import List, Optional, Sequence
 
 import numpy as np
 
 
-# ------------------------ Basic helpers ------------------------
-
-def to_onehot(y: np.ndarray, num_classes: int) -> np.ndarray:
-    y = np.asarray(y, dtype=int)
-    oh = np.zeros((y.shape[0], num_classes), dtype=np.float32)
-    oh[np.arange(y.shape[0]), y] = 1.0
-    return oh
-
-
-def class_distribution(y: np.ndarray, num_classes: int, eps: float = 1e-12) -> np.ndarray:
+def class_distribution(y: np.ndarray, num_classes: int) -> np.ndarray:
     """
-    Compute probability vector over classes.
+    Return normalized class histogram p \in R^K for labels y.
     """
     y = np.asarray(y, dtype=int)
-    counts = np.bincount(y, minlength=num_classes).astype(np.float64)
-    counts = np.clip(counts, eps, None)
-    p = counts / counts.sum()
-    return p.astype(np.float64, copy=False)
+    K = int(num_classes)
+    cnt = np.bincount(y, minlength=K).astype(np.float64)
+    total = float(cnt.sum())
+    if total <= 0:
+        return np.full(K, 1.0 / K, dtype=np.float64)
+    return (cnt / total).astype(np.float64)
 
 
-# --------------------- Federated partitioning -------------------
+def _ensure_sizes(total_n: int, num_clients: int, sizes: Optional[Sequence[int]]) -> np.ndarray:
+    """
+    Make a size vector of length M that sums to <= total_n. If sizes is None,
+    split as evenly as possible with +1 remainders for the first few clients.
+    """
+    if sizes is None:
+        base = total_n // num_clients
+        rem = total_n - base * num_clients
+        out = np.full(num_clients, base, dtype=int)
+        out[:rem] += 1
+        return out
+    arr = np.asarray(sizes, dtype=int)
+    if arr.ndim != 1 or len(arr) != num_clients:
+        raise ValueError("sizes must be a 1-D sequence with length num_clients")
+    if int(arr.sum()) > total_n:
+        raise ValueError(f"sum(sizes)={int(arr.sum())} exceeds dataset size N={total_n}")
+    return arr
+
 
 def iid_split(
     y: np.ndarray,
@@ -34,57 +45,61 @@ def iid_split(
     seed: int = 42,
 ) -> List[np.ndarray]:
     """
-    IID stratified split: each client gets the same class distribution as global,
-    but (optionally) different sizes.
-
-    Args:
-        y: labels [N]
-        num_clients: M
-        sizes: optional list of sample counts per client. If None, as equal as possible.
-        seed: rng seed
-
-    Returns:
-        list of index arrays per client
+    Stratified IID-like split: each client roughly follows the global distribution.
+    - y: global labels [N]
+    - sizes: per-client target sizes (len=M). If None, split almost evenly.
+    - Returns: list of index arrays per client
     """
     y = np.asarray(y, dtype=int)
-    N = len(y)
+    N = int(len(y))
+    K = int(np.max(y)) + 1
+    M = int(num_clients)
+    rng = np.random.default_rng(seed)
 
-    if sizes is None:
-        base = N // num_clients
-        sizes = [base] * num_clients
-        for i in range(N - base * num_clients):
-            sizes[i] += 1
-    else:
-        if sum(sizes) > N:
-            raise ValueError("Sum(sizes) cannot exceed N")
+    target = _ensure_sizes(N, M, sizes)  # (M,)
+    p_global = class_distribution(y, K)  # (K,)
 
-    # stratify by class
-    indices_by_class = [np.where(y == c)[0] for c in range(np.max(y) + 1)]
-    for arr in indices_by_class:
-        rng.shuffle(arr)
+    # Build per-class index pools (shuffled)
+    indices_by_class = [rng.permutation(np.where(y == c)[0]).tolist() for c in range(K)]
+    ptrs = [0] * K
+    client_bins: List[List[int]] = [[] for _ in range(M)]
 
-    # Proportional allocation per client
-    p_global = class_distribution(y, num_classes=np.max(y) + 1)
-    client_indices: List[List[int]] = [[] for _ in range(num_clients)]
+    for m in range(M):
+        n_m = int(target[m])
+        # initial integer allocation by rounding
+        alloc = np.floor(p_global * n_m).astype(int)
+        # fix rounding to hit exact n_m
+        while int(alloc.sum()) < n_m:
+            c = int(rng.integers(0, K))
+            alloc[c] += 1
 
-    ptrs = [0] * len(indices_by_class)
-    for m, target in enumerate(sizes):
-        # target per class for this client
-        per_c = np.floor(target * p_global).astype(int)
-        # adjust rounding
-        while per_c.sum() < target:
-            c = rng.integers(0, len(per_c))
-            per_c[c] += 1
+        take: List[int] = []
+        for c in range(K):
+            k_c = int(alloc[c])
+            if k_c <= 0:
+                continue
+            start = ptrs[c]
+            end = min(start + k_c, len(indices_by_class[c]))
+            if end > start:
+                take.extend(indices_by_class[c][start:end])
+                ptrs[c] = end
 
-        take = []
-        for c, k in enumerate(per_c):
-            start, end = ptrs[c], ptrs[c] + k
-            take.extend(indices_by_class[c][start:end].tolist())
-            ptrs[c] = end
+        # If some class pools were short, top-up from any remaining pool
+        deficit = n_m - len(take)
+        if deficit > 0:
+            leftovers = []
+            for c in range(K):
+                if ptrs[c] < len(indices_by_class[c]):
+                    leftovers.extend(indices_by_class[c][ptrs[c] :])
+                    ptrs[c] = len(indices_by_class[c])
+            if leftovers:
+                rng.shuffle(leftovers)
+                take.extend(leftovers[:deficit])
+
         rng.shuffle(take)
-        client_indices[m] = take
+        client_bins[m] = take[:n_m]
 
-    return [np.array(ix, dtype=int) for ix in client_indices]
+    return [np.array(b, dtype=int) for b in client_bins]
 
 
 def dirichlet_noniid_split(
@@ -95,89 +110,73 @@ def dirichlet_noniid_split(
     seed: int = 42,
 ) -> List[np.ndarray]:
     """
-    Popular non-IID splitter: per class, draw client proportions from Dirichlet(alpha).
-    Smaller alpha -> more skew.
+    Heterogeneous split via Dirichlet class proportions per class.
+    - For each class c, draw proportions over clients ~ Dir(alpha).
+    - Allocate integer counts per (c, client) and pull from per-class pools.
+    - If sizes is provided, perform a second pass to trim/augment to targets.
 
-    Args:
-        y: labels [N]
-        num_clients: M
-        alpha: Dirichlet concentration
-        sizes: optional sample counts per client. If None, allocate as equal as possible.
-        seed: rng seed
+    Returns list of index arrays per client.
     """
     y = np.asarray(y, dtype=int)
-    N = len(y)
-    C = int(np.max(y)) + 1
+    N = int(len(y))
+    K = int(np.max(y)) + 1
+    M = int(num_clients)
+    rng = np.random.default_rng(seed)
 
-    if sizes is None:
-        base = N // num_clients
-        sizes = [base] * num_clients
-        for i in range(N - base * num_clients):
-            sizes[i] += 1
-    else:
-        if sum(sizes) > N:
-            raise ValueError("Sum(sizes) cannot exceed N")
+    target = _ensure_sizes(N, M, sizes)  # may be near-even if None
 
-    # class-wise pools
-    pools = [rng.permutation(np.where(y == c)[0]).tolist() for c in range(C)]
+    # Per-class pools
+    pools = [rng.permutation(np.where(y == c)[0]).tolist() for c in range(K)]
+    pool_ptr = [0] * K
 
-    # sample proportions per class
-    props = rng.dirichlet([alpha] * num_clients, size=C)  # [C, M]
+    # Sample class->client proportions
+    props = rng.dirichlet([alpha] * M, size=K)  # shape [K, M]
 
-    client_bins: List[List[int]] = [[] for _ in range(num_clients)]
-    # First pass: per class allocations
-    for c in range(C):
+    client_bins: List[List[int]] = [[] for _ in range(M)]
+
+    # First pass: assign by class
+    for c in range(K):
         total_c = len(pools[c])
-        alloc_c = np.floor(props[c] * total_c).astype(int)  # [M]
-        # ensure sum equals total_c
-        while alloc_c.sum() < total_c:
-            m = rng.integers(0, num_clients)
-            alloc_c[m] += 1
-        # take from pool
-        pos = 0
-        for m in range(num_clients):
-            k = int(alloc_c[m])
-            take = pools[c][pos : pos + k]
-            client_bins[m].extend(take)
-            pos += k
+        if total_c == 0:
+            continue
+        alloc = np.floor(props[c] * total_c).astype(int)  # (M,)
+        while int(alloc.sum()) < total_c:
+            m = int(rng.integers(0, M))
+            alloc[m] += 1
 
-    # Second pass: trim/augment to target sizes
-    for m in range(num_clients):
-        arr = rng.permutation(client_bins[m]).tolist()
-        if len(arr) > sizes[m]:
-            client_bins[m] = arr[: sizes[m]]
-        elif len(arr) < sizes[m]:
-            # fill deficit from global leftovers
-            deficit = sizes[m] - len(arr)
-            # gather leftovers
-            leftovers = [idx for idx in range(N) if all(idx not in b for b in client_bins)]
-            add = rng.choice(leftovers, size=deficit, replace=False).tolist()
-            client_bins[m].extend(add)
+        start = 0
+        for m in range(M):
+            k = int(alloc[m])
+            if k <= 0:
+                continue
+            end = start + k
+            take = pools[c][start:end]
+            client_bins[m].extend(take)
+            start = end
+
+    # Second pass: adjust to target sizes if provided
+    if sizes is not None:
+        # trim or top-up to exactly target[m]
+        all_assigned = set(idx for bin_ in client_bins for idx in bin_)
+        leftovers = [i for i in range(N) if i not in all_assigned]
+        rng.shuffle(leftovers)
+        lp = 0
+
+        for m in range(M):
+            arr = rng.permutation(client_bins[m]).tolist()
+            n_m = int(target[m])
+            if len(arr) > n_m:
+                client_bins[m] = arr[:n_m]
+            elif len(arr) < n_m:
+                deficit = n_m - len(arr)
+                add = leftovers[lp : lp + deficit]
+                lp += deficit
+                client_bins[m] = arr + add
+            else:
+                client_bins[m] = arr
+
+    # Final shuffle per client for randomness
+    for m in range(M):
         rng.shuffle(client_bins[m])
 
     return [np.array(b, dtype=int) for b in client_bins]
-
-
-def induce_class_missing(
-    y: np.ndarray,
-    missing_map: Dict[int, Sequence[int]],
-    seed: int = 42,
-) -> Dict[int, np.ndarray]:
-    """
-    Remove specified classes per client to simulate class-missing scenario (S3).
-    Args:
-        y: global labels
-        missing_map: {client_id: [class_id, ...]} classes to remove from that client
-    Returns:
-        mask_map: {client_id: boolean mask over that client's indices AFTER split}
-    """
-    mask_map: Dict[int, np.ndarray] = {}
-    # This function does not split; it's designed to be applied AFTER you choose client indices.
-    # Example usage:
-    #   client_ix = iid_split(...)
-    #   mask_map = induce_class_missing(y, {0:[0,1]})
-    #   client0 = client_ix[0][mask_map[0]]
-    # Here we just compute masks, so the caller can index into its own arrays.
-    for cid, missing_classes in missing_map.items():
-        mask_map[cid] = None  # filled by caller with their indices
-    return mask_map
