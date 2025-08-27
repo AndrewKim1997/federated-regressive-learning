@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence
 
 import numpy as np
 
@@ -46,7 +46,6 @@ def iid_split(
     Returns:
         list of index arrays per client
     """
-    rng = np.random.default_rng(seed)
     y = np.asarray(y, dtype=int)
     N = len(y)
 
@@ -106,7 +105,6 @@ def dirichlet_noniid_split(
         sizes: optional sample counts per client. If None, allocate as equal as possible.
         seed: rng seed
     """
-    rng = np.random.default_rng(seed)
     y = np.asarray(y, dtype=int)
     N = len(y)
     C = int(np.max(y)) + 1
@@ -173,7 +171,6 @@ def induce_class_missing(
     Returns:
         mask_map: {client_id: boolean mask over that client's indices AFTER split}
     """
-    rng = np.random.default_rng(seed)
     mask_map: Dict[int, np.ndarray] = {}
     # This function does not split; it's designed to be applied AFTER you choose client indices.
     # Example usage:
@@ -182,6 +179,5 @@ def induce_class_missing(
     #   client0 = client_ix[0][mask_map[0]]
     # Here we just compute masks, so the caller can index into its own arrays.
     for cid, missing_classes in missing_map.items():
-        missing_set = set(int(c) for c in missing_classes)
         mask_map[cid] = None  # filled by caller with their indices
     return mask_map
