@@ -11,8 +11,6 @@ This repository focuses on **method reproducibility** for Federated Regressive L
 ```bash
 conda env create -f env/environment.yml
 conda activate frl
-# (optional) Install PyTorch CPU wheels if you plan to use torchvision-based loaders:
-# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 pip install -e .[dev]
 ```
 
@@ -27,15 +25,28 @@ pip install -e .[dev]
 ### Option C: Docker (CPU)
 
 ```bash
-docker build -f docker/Dockerfile -t frl:cpu .
+# Build and sanity-check
+docker build -f docker/Dockerfile.cpu -t frl:cpu .
 docker run --rm -it -v "$PWD:/app" frl:cpu python -c "import frl; print('ok')"
 ```
+
+### Option D: Docker (CUDA, optional)
+
+Use this if you want CIFAR-10 via `torchvision` or GPU training.
+
+```bash
+docker build -f docker/Dockerfile.cuda -t frl:cuda .
+docker run --gpus all --rm -it -v "$PWD:/app" frl:cuda \
+  python -c "import torch; print('CUDA available:', torch.cuda.is_available())"
+```
+
+> Images run as a non-root user and expect you to **bind-mount** the repo (`-v "$PWD:/app"`) so logs/figures land under `results/`.
 
 ---
 
 ## 2) Determinism & Seeds
 
-Randomness is controlled via Python/NumPy seeds. The provided runner uses a NumPy-only softmax model (no PyTorch dependency for training).
+Randomness is controlled via Python/NumPy seeds. The provided runner uses a NumPy-only baseline model (no PyTorch dependency for training).
 
 * `frl.utils.set_seed(seed=42)` sets Python/NumPy and `PYTHONHASHSEED`.
 * Scenario YAMLs include a `seed` field; change it to regenerate splits.
@@ -56,6 +67,8 @@ torch.use_deterministic_algorithms(True)
 
 * **MNIST**: loaded via scikit-learn (OpenML). Arrays are `float32` in `[0,1]`.
 * **CIFAR-10**: requires `torchvision` for download; converted to NumPy for training.
+
+  * Use the **CUDA image** (includes `torch`/`torchvision`), or install `torchvision` in your env if you need CIFAR-10 without GPU.
 * **UGEI**: **not distributed**. See `docs/PRIVACY.md` and `frl/data/ugei_placeholder.py`.
 
 > Never commit datasets. `.gitignore` excludes `data/` and large artifacts.
@@ -92,6 +105,15 @@ python scripts/run_federated.py \
   --rounds 3 --local-epochs 1 --batch-size 256 --lr 0.1
 
 python scripts/make_fig_tables.py --glob "results/logs/*.csv" --outdir results/figures
+```
+
+Docker (CPU) variant:
+
+```bash
+docker run --rm -it -v "$PWD:/app" frl:cpu \
+  bash -lc 'python -m frl.scenarios.scenario_gen -c frl/scenarios/s1_equal_dist_diff_size.yaml -o results/scenarios --preview && \
+            python scripts/run_federated.py --dataset mnist --scenario frl/scenarios/s1_equal_dist_diff_size.yaml --aggregator frl --rounds 3 --local-epochs 1 --batch-size 256 --lr 0.1 && \
+            python scripts/make_fig_tables.py --glob "results/logs/*.csv" --outdir results/figures'
 ```
 
 ---
