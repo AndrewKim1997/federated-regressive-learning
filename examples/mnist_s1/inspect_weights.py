@@ -36,7 +36,7 @@ def build_client_indices_from_config(y, cfg):
 
 def main():
     ds = load_dataset("mnist", split="train")
-    X, y, K = ds.X, ds.y, ds.num_classes
+    y, K = ds.y, ds.num_classes
 
     with open("frl/scenarios/s1_equal_dist_diff_size.yaml", "r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
