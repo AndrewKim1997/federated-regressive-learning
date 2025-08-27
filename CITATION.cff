@@ -1,33 +1,24 @@
+# CITATION.cff
 cff-version: 1.2.0
-message: >-
-  If you use this repository, please cite both the software and the original article.
-title: federated-regressive-learning
-type: software
-version: 0.1.0
-abstract: >-
-  Method-reproduction code for Federated Regressive Learning (2024).
-  Provides programmatic scenario generators (S1–S3), seeded experiments,
-  and baselines. Exact paper conditions are not fully recoverable; we reproduce trends.
+message: "If you use this repository, please cite the software and the paper."
+title: "federated-regressive-learning"
+abstract: "Method-reproduction code and scenario generators for Federated Regressive Learning (FRL)."
 authors:
   - family-names: Kim
     given-names: Dong Seok
-    affiliation: Gachon University
-    email: jkds5920@gachon.ac.kr
   - family-names: Ahmad
     given-names: Shabir
-    affiliation: Gachon University
-    email: shabir@gachon.ac.kr
   - family-names: Whangbo
     given-names: Taeg Keun
-    affiliation: Gachon University
-    email: tkwhangbo@gachon.ac.kr
-repository-code: https://github.com/AndrewKim1997/federated-regressive-learning
-license: MIT
 keywords:
-  - federated-learning
-  - non-iid
-  - distribution-shift
-  - wasserstein-distance
+  - federated learning
+  - aggregation
+  - distribution shift
+  - reproducibility
+  - FRL
+repository-code: "https://github.com/AndrewKim1997/federated-regressive-learning"
+license: MIT
+version: "0.1.0"
 
 preferred-citation:
   type: article
@@ -39,8 +30,9 @@ preferred-citation:
       given-names: Shabir
     - family-names: Whangbo
       given-names: Taeg Keun
-  journal: Applied Soft Computing
+  journal: "Applied Soft Computing"
   volume: "166"
+  pages: "112043"
   year: 2024
-  doi: 10.1016/j.asoc.2024.112043
-  url: https://doi.org/10.1016/j.asoc.2024.112043
+  publisher: Elsevier
+  doi: "10.1016/j.asoc.2024.112043"
