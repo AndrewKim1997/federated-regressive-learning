@@ -1,0 +1,48 @@
+# Global training defaults for federated-regressive-learning
+seed: 42
+device: "cpu"   # "cpu" | "cuda"
+
+dataset:
+  # Refer to an entry in configs/datasets.yaml
+  name: "mnist"          # "mnist" | "cifar10" | "ugei_placeholder"
+  split: "train"
+  root: null             # set a custom path if needed (e.g., "./data")
+
+scenario:
+  # Refer to an alias in configs/scenarios.yaml
+  alias: "s1_equal_dist_diff_size"
+
+federated:
+  num_clients: 5
+  rounds: 20
+  clients_per_round: 5          # number of participating clients per round
+  local_epochs: 1
+  batch_size: 128
+  shuffle: true
+  drop_last: false
+
+model:
+  # Placeholder model config; adapt to your training script
+  type: "mlp"                    # "mlp" | "logreg" | ...
+  hidden_sizes: [256, 128]
+  dropout: 0.0
+  weight_decay: 0.0
+
+optimizer:
+  # Refer to a section in configs/optimizers.yaml
+  name: "adam"
+  override: {}                   # optional per-run overrides, e.g., {lr: 0.0005}
+
+evaluation:
+  metrics: ["accuracy", "ece", "precision", "recall", "f1"]
+  eval_every: 1                  # evaluate every N rounds
+  n_bins_ece: 15
+
+logging:
+  log_dir: "results/logs"
+  figure_dir: "results/figures"
+  save_checkpoints: false
+  verbose: true
+
+reproducibility:
+  deterministic: true
