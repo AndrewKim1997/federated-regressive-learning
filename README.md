@@ -1,4 +1,8 @@
 <p align="center">
+  <a href="https://www.sciencedirect.com/journal/applied-soft-computing">
+    <img alt="Journal: Applied Soft Computing"
+         src="https://img.shields.io/badge/Applied%20Soft%20Computing-blue?style=flat-square&logo=elsevier&logoColor=white&labelColor=blue">
+  </a>
   <a href="https://github.com/AndrewKim1997/federated-regressive-learning/actions/workflows/ci.yml">
     <img alt="CI"
          src="https://img.shields.io/github/actions/workflow/status/AndrewKim1997/federated-regressive-learning/ci.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=CI&labelColor=1f2937">
