@@ -1,20 +1,16 @@
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass
-from typing import Optional, Tuple
+from typing import Optional
 
 import numpy as np
 from sklearn.datasets import fetch_openml
 
 try:
-    import torchvision  # type: ignore
     from torchvision import datasets, transforms as T  # type: ignore
-
-    _HAS_TORCHVISION = True
-except Exception:  # pragma: no cover - optional dependency
-    _HAS_TORCHVISION = False
-
+except Exception:  # torchvision optional
+    datasets = None  # type: ignore
+    T = None  # type: ignore
 
 @dataclass
 class NpDataset:
