@@ -24,26 +24,36 @@
 </p>
 
 <h1 align="center">Federated Regressive Learning (FRL)</h1>
-<p align="center">
-  <em>Adaptive <b>server aggregation</b> that weights client updates by both <b>data size</b> and <b>distribution quality</b>.</em><br>
-  <em>Distances (e.g., Wasserstein / JS) → normalized weights β<sub>i</sub>.</em>
-</p>
 
-<p align="center">
-  <a href="docs/media/frl-hero.mp4">
-    <img src="docs/media/frl-hero.gif" alt="FRL overview: client distributions → distance → β-weights → global update" width="820">
-  </a><br>
-  <sub>Click for 1080p MP4</sub>
-</p>
+> A drop-in **server-side aggregator** that weights client updates by **data size** and **distribution alignment**.<br>
+> FRL measures each client’s label distribution against a chosen **reference** (default: uniform) via a statistical distance (e.g., **Wasserstein**, **JS**), converts distance to an affinity, multiplies by sample counts, and **normalizes** to obtain weights β<sub>i</sub> for global averaging.
+
+- **Paper**: <em>Federated regressive learning: Adaptive weight updates through statistical information of clients</em> — Applied Soft Computing (2024)  
+  [https://www.sciencedirect.com/journal/applied-soft-computing](https://doi.org/10.1016/j.asoc.2024.112043)
+- **Core idea**: compute per-client distances to a reference distribution → turn distances into affinities → multiply by size priors → **normalize** to obtain β and aggregate. Works as a **FedAvg-compatible** replacement (IID ≈ FedAvg).
 
 ---
 
-## 🌟 Highlights
+## ✨ TL;DR
 
-* **Method-first reproducibility**: seeded scenario generators (S1/S2/S3) and deterministic pipelines.
-* **Drop-in aggregator**: `frl_aggregate(...)` with interpretable weights and metrics.
-* **Baselines included**: FedAvg / FedProx wrappers for quick, fair comparisons.
-* **Batteries included**: MNIST (NumPy/OpenML), CIFAR-10 (via `torchvision`), figures/tables scripts, CI, and Docker (CPU & CUDA).
+- **Handles non-IID**: clients closer to the reference get **larger β**, far clients are **softly down-weighted**; size skew handled via a **sample-count prior**.  
+- **Reduces to baseline**: under near-IID, β approaches size-weighted averaging (i.e., FedAvg-like behavior).  
+- **Interpretable**: we log **β**, pairwise **distances**, and per-client **class histograms** for auditability.  
+- **Minimal friction**: no custom loss; plug the aggregator into your training loop.
+
+---
+
+## 📊 Results at a glance
+
+<p align="center">
+  <a href="docs/media/frl-algorithm.pdf">
+    <img src="docs/media/frl-algorithm.png"
+         alt="FRL aggregation: client distributions → distance → β-weights → server update"
+         width="900"
+         style="border:1px solid #e5e7eb;border-radius:8px;">
+  </a><br>
+  <sub>Click to open the PDF</sub>
+</p>
 
 ---
 
