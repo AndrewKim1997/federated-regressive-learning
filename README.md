@@ -28,7 +28,8 @@
 > A drop-in **server-side aggregator** that weights client updates by **data size** and **distribution alignment**.<br>
 > FRL measures each client’s label distribution against a chosen **reference** (default: uniform) via a statistical distance (e.g., **Wasserstein**, **JS**), converts distance to an affinity, multiplies by sample counts, and **normalizes** to obtain weights β<sub>i</sub> for global averaging.
 
-- **Paper**: <em>Federated regressive learning: Adaptive weight updates through statistical information of clients</em> — Applied Soft Computing (2024) [https://www.sciencedirect.com/journal/applied-soft-computing](https://doi.org/10.1016/j.asoc.2024.112043)
+- **Paper**: <em>Federated regressive learning: Adaptive weight updates through statistical information of clients</em>
+([https://www.sciencedirect.com/journal/applied-soft-computing](https://doi.org/10.1016/j.asoc.2024.112043))
 - **Core idea**: compute per-client distances to a reference distribution → turn distances into affinities → multiply by size priors → **normalize** to obtain β and aggregate. Works as a **FedAvg-compatible** replacement (IID ≈ FedAvg).
 
 ---
