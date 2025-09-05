@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://www.sciencedirect.com/journal/applied-soft-computing">
+  <a href="https://doi.org/10.1016/j.asoc.2024.112043">
     <img alt="Journal: Applied Soft Computing"
          src="https://img.shields.io/badge/Applied%20Soft%20Computing-1e3787?style=flat-square&logo=elsevier&logoColor=white&labelColor=1e3787">
   </a>
